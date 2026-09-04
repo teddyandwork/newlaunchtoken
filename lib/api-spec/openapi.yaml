@@ -1,0 +1,442 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: API for the Multi-Chain Token Radar monitoring console
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Service health and provider connectivity
+  - name: radar
+    description: Token discovery and alert activity
+  - name: settings
+    description: Runtime radar settings
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server, database, Telegram, and provider health.
+      responses:
+        "200":
+          description: Current health
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [radar]
+      summary: Get dashboard totals
+      responses:
+        "200":
+          description: Radar totals and recent activity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+  /providers:
+    get:
+      operationId: getProviders
+      tags: [health]
+      summary: List configured discovery providers
+      responses:
+        "200":
+          description: Provider statuses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProviderStatus"
+  /tokens:
+    get:
+      operationId: getTokens
+      tags: [radar]
+      summary: List discovered tokens
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: number
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: chain
+          in: query
+          schema:
+            type: string
+        - name: provider
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: posted
+          in: query
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: Discovered tokens ordered by latest detection
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Token"
+  /events:
+    get:
+      operationId: getEvents
+      tags: [radar]
+      summary: List recent discovery and alert events
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: number
+            minimum: 1
+            maximum: 100
+            default: 50
+      responses:
+        "200":
+          description: Recent events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TokenEvent"
+  /settings:
+    get:
+      operationId: getSettings
+      tags: [settings]
+      summary: Get radar settings and setup state
+      responses:
+        "200":
+          description: Current settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RadarSettings"
+    patch:
+      operationId: updateSettings
+      tags: [settings]
+      summary: Update radar settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RadarSettingsUpdate"
+      responses:
+        "200":
+          description: Updated settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RadarSettings"
+  /telegram/test:
+    post:
+      operationId: sendTelegramTest
+      tags: [settings]
+      summary: Send a minimal Telegram connectivity test
+      responses:
+        "200":
+          description: Telegram test result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TelegramTestResult"
+        "400":
+          description: Telegram is not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      required:
+        - status
+        - uptime
+        - providers
+        - telegram
+        - database
+      properties:
+        status:
+          type: string
+          enum: [ok, degraded]
+        uptime:
+          type: number
+        providers:
+          type: object
+          additionalProperties:
+            type: string
+        telegram:
+          type: string
+          enum: [connected, disconnected, unconfigured]
+        database:
+          type: string
+          enum: [connected, disconnected]
+        lastEventAt:
+          type: ["string", "null"]
+          format: date-time
+    ProviderStatus:
+      type: object
+      required:
+        - id
+        - displayName
+        - status
+        - mode
+        - chains
+        - description
+      properties:
+        id:
+          type: string
+        displayName:
+          type: string
+        status:
+          type: string
+          enum: [connected, disconnected, rate_limited, error, disabled, starting]
+        mode:
+          type: string
+          enum: [websocket, polling, webhook, disabled]
+        chains:
+          type: array
+          items:
+            type: string
+        description:
+          type: string
+        lastEventAt:
+          type: ["string", "null"]
+          format: date-time
+        error:
+          type: ["string", "null"]
+        eventsSeen:
+          type: number
+    Token:
+      type: object
+      required:
+        - id
+        - chain
+        - address
+        - source
+        - sources
+        - detectedAt
+        - posted
+      properties:
+        id:
+          type: number
+        chain:
+          type: string
+        address:
+          type: string
+        name:
+          type: ["string", "null"]
+        symbol:
+          type: ["string", "null"]
+        source:
+          type: string
+        sources:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: ["string", "null"]
+          format: date-time
+        detectedAt:
+          type: string
+          format: date-time
+        priceUsd:
+          type: ["number", "null"]
+        marketCapUsd:
+          type: ["number", "null"]
+        fdvUsd:
+          type: ["number", "null"]
+        liquidityUsd:
+          type: ["number", "null"]
+        volume5mUsd:
+          type: ["number", "null"]
+        volume1hUsd:
+          type: ["number", "null"]
+        volume24hUsd:
+          type: ["number", "null"]
+        buys5m:
+          type: ["number", "null"]
+        sells5m:
+          type: ["number", "null"]
+        pairAddress:
+          type: ["string", "null"]
+        dex:
+          type: ["string", "null"]
+        website:
+          type: ["string", "null"]
+        twitter:
+          type: ["string", "null"]
+        telegram:
+          type: ["string", "null"]
+        discord:
+          type: ["string", "null"]
+        logoUrl:
+          type: ["string", "null"]
+        chartUrl:
+          type: ["string", "null"]
+        posted:
+          type: boolean
+        telegramValid:
+          type: boolean
+    TokenEvent:
+      type: object
+      required:
+        - id
+        - type
+        - source
+        - occurredAt
+        - message
+      properties:
+        id:
+          type: number
+        tokenId:
+          type: ["number", "null"]
+        type:
+          type: string
+          enum: [discovered, enriched, duplicate, posted, provider_error, skipped_no_telegram, skipped_invalid_telegram]
+        source:
+          type: string
+        occurredAt:
+          type: string
+          format: date-time
+        message:
+          type: string
+    DashboardSummary:
+      type: object
+      required:
+        - tokensDiscovered
+        - alertsPosted
+        - duplicatesIgnored
+        - tokensWithValidTelegram
+        - skippedNoTelegram
+        - skippedInvalidTelegram
+        - activeProviders
+        - totalProviders
+        - eventsLast24h
+        - lastEventAt
+      properties:
+        tokensDiscovered:
+          type: number
+        alertsPosted:
+          type: number
+        duplicatesIgnored:
+          type: number
+        tokensWithValidTelegram:
+          type: number
+        skippedNoTelegram:
+          type: number
+        skippedInvalidTelegram:
+          type: number
+        activeProviders:
+          type: number
+        totalProviders:
+          type: number
+        eventsLast24h:
+          type: number
+        lastEventAt:
+          type: ["string", "null"]
+          format: date-time
+        topChains:
+          type: array
+          items:
+            type: object
+            required: [chain, count]
+            properties:
+              chain:
+                type: string
+              count:
+                type: number
+    RadarSettings:
+      type: object
+      required:
+        - paused
+        - filterMode
+        - selectedChains
+        - selectedProviders
+        - telegramConfigured
+        - requireTelegram
+        - databaseConfigured
+      properties:
+        paused:
+          type: boolean
+        filterMode:
+          type: boolean
+        minLiquidityUsd:
+          type: ["number", "null"]
+        maxMarketCapUsd:
+          type: ["number", "null"]
+        minVolumeUsd:
+          type: ["number", "null"]
+        maxTokenAgeMinutes:
+          type: ["number", "null"]
+        minTransactions:
+          type: ["number", "null"]
+        selectedChains:
+          type: array
+          items:
+            type: string
+        selectedProviders:
+          type: array
+          items:
+            type: string
+        telegramConfigured:
+          type: boolean
+        requireTelegram:
+          type: boolean
+        databaseConfigured:
+          type: boolean
+    RadarSettingsUpdate:
+      type: object
+      properties:
+        paused:
+          type: boolean
+        filterMode:
+          type: boolean
+        minLiquidityUsd:
+          type: ["number", "null"]
+        maxMarketCapUsd:
+          type: ["number", "null"]
+        minVolumeUsd:
+          type: ["number", "null"]
+        maxTokenAgeMinutes:
+          type: ["number", "null"]
+        minTransactions:
+          type: ["number", "null"]
+        selectedChains:
+          type: array
+          items:
+            type: string
+        selectedProviders:
+          type: array
+          items:
+            type: string
+    TelegramTestResult:
+      type: object
+      required: [ok, message]
+      properties:
+        ok:
+          type: boolean
+        message:
+          type: string
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
