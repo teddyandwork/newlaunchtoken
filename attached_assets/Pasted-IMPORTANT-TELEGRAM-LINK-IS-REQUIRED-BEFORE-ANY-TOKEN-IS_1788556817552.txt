@@ -1,0 +1,55 @@
+IMPORTANT — TELEGRAM LINK IS REQUIRED BEFORE ANY TOKEN IS POSTED
+Continue development of the Multi-Chain Token Radar using real data only.
+The system must have a strict Telegram-link filter:
+ONLY send/post a token to my Telegram channel if the token has a valid Telegram/community Telegram link.
+If a discovered token does not have a valid Telegram link:
+• ❌ Do NOT send it to the Telegram channel
+• ❌ Do NOT post it with N/A
+• ❌ Do NOT leave the Telegram field blank
+• ❌ Do NOT guess or generate a Telegram link
+• ❌ Do NOT use the token name/ticker to create a Telegram URL
+• ❌ Do NOT send the token anyway just because it is trending
+Instead, mark it internally as:
+SKIPPED — NO VALID TELEGRAM LINK
+A token should only enter the Telegram posting queue after this check passes.
+Required flow:
+DISCOVER TOKEN → ENRICH TOKEN DATA → FIND TELEGRAM LINK → VALIDATE TELEGRAM LINK → IF VALID → POST → IF INVALID/MISSING → SKIP
+The Telegram link must come from a legitimate provider/source field or verified token/project information. Do not fabricate links.
+Example that SHOULD be posted:
+🔔 NOW TRENDING ON DEXSCREENER
+🪙 Token: $TOKEN
+⛓️ Network: SOLANA
+📱 Telegram: [Join Telegram]
+🐦 Twitter: [Follow]
+🌐 Website: [Visit]
+📊 Chart: [Open Chart]
+📋 CA: CONTRACT_ADDRESS
+Example that MUST NOT be posted:
+Token has:
+• Website ✅
+• Chart ✅
+• Contract Address ✅
+• Twitter ❌
+• Telegram ❌
+→ SKIP ENTIRELY. Do not send anything to the Telegram channel.
+Important: Telegram is the only mandatory social requirement. Twitter/X and website can remain optional. If they are unavailable, simply omit those buttons. But if Telegram is unavailable or invalid, the entire token alert must be rejected.
+Add a configuration setting:
+REQUIRE_TELEGRAM=true
+Make this enabled by default and enforce it at the final Telegram-delivery layer so no provider can accidentally bypass the rule.
+Also show the dashboard statistics:
+• Tokens detected
+• Tokens with valid Telegram
+• Tokens posted
+• Tokens skipped — no Telegram
+• Tokens skipped — invalid Telegram
+• Duplicate tokens
+Keep the existing source-specific labels:
+• 🔔 NOW TRENDING ON DEXSCREENER
+• 🔔 NEW ON PUMP.FUN
+• 🔔 NOW TRENDING ON DEXTOOLS
+• etc.
+Continue adding the other real discovery sources/providers, including DEXTools, Pump.fun where a reliable permitted feed is available, direct Solana/RPC or indexer coverage, Ethereum, BNB, Base, Arbitrum, Polygon, Avalanche, and other legitimate sources.
+Do not mark a provider as working unless it has been actually tested with real live data.
+Also maintain deduplication across providers using chain + contract/mint address so the same token is not posted multiple times.
+Final rule: NO TELEGRAM LINK = NO TELEGRAM POST.
+Telegram posting should only happen after the mandatory validation passes. Telegram’s Bot API supports sending messages to channels and inline buttons, so use the normal Telegram API flow for delivery.
